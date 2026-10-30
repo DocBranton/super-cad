@@ -42,12 +42,6 @@ jobs:
           databricks auth describe
           databricks current-user me --output json > /dev/null
           echo "Databricks workspace authentication verified"
-      - name: Bind bundle resource to existing app if needed
-        shell: bash
-        run: |
-          # Binding existing Databricks app avoids creating a second app.
-          # If the resource is already bound, deploy proceeds without rebinding.
-          databricks bundle deployment bind super_cad super-cad -t dev --auto-approve
       - name: Deploy and start Super CAD
         run: |
           databricks bundle validate -t dev
