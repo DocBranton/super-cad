@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { StepImport } from "./ui/StepImport";
 import { PanelLeft, Sparkles } from "lucide-react";
 import { TitleBar, Ribbon } from "./ui/Chrome";
 import { Browser } from "./ui/Browser";
@@ -11,6 +12,7 @@ import { command } from "./commands";
 import { getState, loadConfig, setState, startKernel, useStore } from "./state/store";
 
 export function App() {
+  const [stepOpen, setStepOpen] = useState(false);
   const dialog = useStore((s) => s.dialog);
   const assistantOpen = useStore((s) => s.assistantOpen);
   const browserOpen = useStore((s) => s.browserOpen);
@@ -46,6 +48,8 @@ export function App() {
       <main className={`workspace ${assistantOpen ? "with-assistant" : ""}`} aria-label="Design workspace">
         {browserOpen ? <Browser /> : <button className="tb-btn" style={{ position: "absolute", left: 6, top: 6, zIndex: 5 }} title="Show browser" onClick={() => setState({ browserOpen: true })}><PanelLeft size={15} /></button>}
         <Viewport />
+        <button className="btn" onClick={() => setStepOpen(true)} style={{position:"absolute",top:8,right:assistantOpen ? 315 : 42,zIndex:6,background:"#24445d",color:"#fff"}}>Import STEP…</button>
+        {stepOpen && <StepImport onClose={() => setStepOpen(false)} />}
         {assistantOpen ? <Assistant /> : <button className="tb-btn" style={{ position: "absolute", right: 118, top: 10, zIndex: 5, color: "var(--icon-alt)" }} title="SI assistant (I)" onClick={() => setState({ assistantOpen: true })}><Sparkles size={16} /></button>}
         <FeatureDialog />
         {dialog === "parameters" && <ParametersDialog />}
