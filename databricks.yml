@@ -1,38 +1,15 @@
-# Databricks Asset Bundle for the SI CAD Workbench app.
-# Deploy: databricks bundle deploy -t dev && databricks bundle run super_cad -t dev
+# Super CAD initial standalone deployment into existing app 'super-cad'.
+# No placeholder serving endpoint or UC Volume is required for first smoke test.
+# After live verification, configure governed storage and an approved model endpoint.
 bundle:
   name: super-cad
-
-variables:
-  serving_endpoint:
-    description: Approved Model Serving endpoint used by the SI planner
-    # Replace with the endpoint approved for your environment.
-    default: databricks-llama-4-maverick
-  volume_full_name:
-    description: Unity Catalog Volume (catalog.schema.volume) for project storage
-    default: main.engineering.super_cad
 
 resources:
   apps:
     super_cad:
-      # Deploys to the existing app. If the bundle did not create it, bind it once first:
-      #   databricks bundle deployment bind super_cad super-cad -t dev
       name: super-cad
-      description: SI-assisted parametric CAD in the browser
+      description: Browser-native SI-assisted parametric CAD
       source_code_path: .
-      user_api_scopes:
-        - model-serving
-        - files
-      resources:
-        - name: serving-endpoint
-          serving_endpoint:
-            name: ${var.serving_endpoint}
-            permission: CAN_QUERY
-        - name: volume
-          uc_securable:
-            securable_full_name: ${var.volume_full_name}
-            securable_type: VOLUME
-            permission: WRITE_VOLUME
 
 targets:
   dev:
