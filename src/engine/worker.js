@@ -60,7 +60,7 @@ const handlers = {
     await init();
     if (!importedBase) throw new Error("Import a STEP solid first");
     if (![x, y, diameter].every(Number.isFinite) || !(diameter >= 0.5 && diameter <= 5000)) throw new Error("Invalid hole position or diameter");
-    const bounds = importedBase.boundingBox.bounds;
+    const bounds = importedShape.boundingBox.bounds;
     const [[xmin,ymin,zmin],[xmax,ymax,zmax]] = bounds;
     if (x < xmin || x > xmax || y < ymin || y > ymax) throw new Error("Hole center is outside imported model XY bounds");
     const height = zmax-zmin;
@@ -68,9 +68,9 @@ const handlers = {
     const cutter = r.makeCylinder(diameter / 2, height + 4, [x,y,zmin-2], [0,0,1]);
     let shape;
     try {
-      shape = importedBase.cut(cutter);
+      shape = importedShape.cut(cutter);
       if (!(shape.solids?.length)) throw new Error("Cut produced no solids");
-      const before = r.measureVolume(importedBase);
+      const before = r.measureVolume(importedShape);
       const after = r.measureVolume(shape);
       if (!(after > 0 && after < before - Math.max(0.000001, before*1e-9))) throw new Error("Hole does not intersect the imported solid");
       const detail = describe(r, { id:"imported", name:"Modified STEP", shape }, undefined);
