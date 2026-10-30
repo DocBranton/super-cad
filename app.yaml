@@ -1,0 +1,14 @@
+# Databricks App runtime configuration.
+# Deployment runs `npm install` and `npm run build`, then this command.
+command: ["node", "server/index.js"]
+env:
+  # Name of an approved Model Serving endpoint (chat format). Omit to use the offline planner.
+  - name: SERVING_ENDPOINT
+    valueFrom: serving-endpoint
+  # Unity Catalog Volume for projects, e.g. main.cad.workbench or /Volumes/main/cad/workbench
+  - name: PROJECTS_VOLUME
+    valueFrom: volume
+  - name: SERVICE_THEME
+    value: air-force
+  - name: CLASSIFICATION_BANNER
+    value: ""
