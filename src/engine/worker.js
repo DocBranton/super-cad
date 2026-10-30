@@ -18,6 +18,7 @@ let fontErrors = {};
 let ready = null;
 let current = { plan: null, bodies: [], features: {} };
 let importedShape = null;
+let importedBase = null;
 
 function init() {
   ready ??= opencascade({ locateFile: () => wasmUrl }).then((instance) => {
@@ -49,9 +50,46 @@ const handlers = {
     try { detail = describe(r, { id: "imported", name: String(name || "Imported STEP").slice(0, 100), shape }, undefined); }
     catch (e) { shape.delete?.(); throw e; }
     importedShape?.delete?.();
-    importedShape = shape;
+    importedBase?.delete?.();
+    importedBase = shape;
+    importedShape = shape.clone();
     const transfer = [detail.vertices.buffer, detail.normals.buffer, detail.triangles.buffer, detail.lines.buffer];
     return { result: { ...detail, solidCount: shape.solids.length }, transfer };
+  },
+  async cutImportedHole({ x, y, diameter }) {
+    await init();
+    if (!importedBase) throw new Error("Import a STEP solid first");
+    if (![x, y, diameter].every(Number.isFinite) || !(diameter >= 0.5 && diameter <= 5000)) throw new Error("Invalid hole position or diameter");
+    const bounds = importedBase.boundingBox.bounds;
+    const [[xmin,ymin,zmin],[xmax,ymax,zmax]] = bounds;
+    if (x < xmin || x > xmax || y < ymin || y > ymax) throw new Error("Hole center is outside imported model XY bounds");
+    const height = zmax-zmin;
+    if (!(height > 0)) throw new Error("Imported solid has invalid thickness");
+    const cutter = r.makeCylinder(diameter / 2, height + 4, [x,y,zmin-2], [0,0,1]);
+    let shape;
+    try {
+      shape = importedBase.cut(cutter);
+      if (!(shape.solids?.length)) throw new Error("Cut produced no solids");
+      const before = r.measureVolume(importedBase);
+      const after = r.measureVolume(shape);
+      if (!(after > 0 && after < before - Math.max(0.000001, before*1e-9))) throw new Error("Hole does not intersect the imported solid");
+      const detail = describe(r, { id:"imported", name:"Modified STEP", shape }, undefined);
+      const check = new oc.BRepCheck_Analyzer(shape.wrapped, true, false, false);
+      const valid = check.IsValid(); check.delete();
+      if (!valid) throw new Error("Result is not a valid B-Rep");
+      importedShape?.delete?.();
+      importedShape = shape;
+      shape = null;
+      return { result: { ...detail, solidCount:importedShape.solids.length, removedVolume:before-after }, transfer:[detail.vertices.buffer,detail.normals.buffer,detail.triangles.buffer,detail.lines.buffer] };
+    } finally { cutter.delete?.(); shape?.delete?.(); }
+  },
+  async resetImported() {
+    await init();
+    if (!importedBase) throw new Error("Import a STEP solid first");
+    const shape = importedBase.clone();
+    const detail = describe(r, {id:"imported",name:"Imported STEP",shape},undefined);
+    importedShape?.delete?.(); importedShape=shape;
+    return {result:{...detail,solidCount:shape.solids.length},transfer:[detail.vertices.buffer,detail.normals.buffer,detail.triangles.buffer,detail.lines.buffer]};
   },
   async exportImportedStep() {
     await init();
