@@ -1,7 +1,7 @@
 # Databricks Asset Bundle for the SI CAD Workbench app.
-# Deploy: databricks bundle deploy -t dev && databricks bundle run si_cad_workbench -t dev
+# Deploy: databricks bundle deploy -t dev && databricks bundle run super_cad -t dev
 bundle:
-  name: si-cad-workbench
+  name: super-cad
 
 variables:
   serving_endpoint:
@@ -10,14 +10,14 @@ variables:
     default: databricks-llama-4-maverick
   volume_full_name:
     description: Unity Catalog Volume (catalog.schema.volume) for project storage
-    default: workspace.am-foundary.cad_artifacts
+    default: main.engineering.super_cad
 
 resources:
   apps:
-    si_cad_workbench:
+    super_cad:
       # Deploys to the existing app. If the bundle did not create it, bind it once first:
-      #   databricks bundle deployment bind si_cad_workbench cad-workbench -t dev
-      name: cad-workbench
+      #   databricks bundle deployment bind super_cad super-cad -t dev
+      name: super-cad
       description: SI-assisted parametric CAD in the browser
       source_code_path: .
       user_api_scopes:
