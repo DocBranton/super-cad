@@ -69,6 +69,8 @@ export const geometry = {
   regenerate: (plan: unknown, rollback?: number) => call<RegenResult>("regenerate", { plan, rollback }),
   validate: () => call<ValidationReport>("validate"),
   importStep: (buffer: ArrayBuffer, name: string) => call<BodyMesh & { solidCount: number }>("importStep", { buffer, name }),
+  cutImportedHole: (x: number, y: number, diameter: number) => call<BodyMesh & { solidCount: number; removedVolume: number }>("cutImportedHole", { x, y, diameter }),
+  resetImported: () => call<BodyMesh & { solidCount: number }>("resetImported"),
   exportImportedStep: () => call<{ buffer: ArrayBuffer; bytes: number }>("exportImportedStep"),
   export: (format: "step" | "stl", bodyIds?: string[]) => call<{ buffer: ArrayBuffer; bytes: number }>("export", { format, bodyIds }),
 };
