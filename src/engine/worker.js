@@ -17,6 +17,7 @@ let oc = null;
 let fontErrors = {};
 let ready = null;
 let current = { plan: null, bodies: [], features: {} };
+let importedShape = null;
 
 function init() {
   ready ??= opencascade({ locateFile: () => wasmUrl }).then((instance) => {
@@ -39,6 +40,26 @@ function release() {
 }
 
 const handlers = {
+  async importStep({ buffer, name }) {
+    await init();
+    if (!(buffer instanceof ArrayBuffer) || buffer.byteLength < 50 || buffer.byteLength > 32 * 1024 * 1024) throw new Error("STEP file must be between 50 bytes and 32 MB");
+    const shape = await r.importSTEP(new Blob([buffer], { type: "application/step" }));
+    if (!shape || !shape.solids?.length) { shape?.delete?.(); throw new Error("STEP contains no solid B-Rep geometry"); }
+    let detail;
+    try { detail = describe(r, { id: "imported", name: String(name || "Imported STEP").slice(0, 100), shape }, undefined); }
+    catch (e) { shape.delete?.(); throw e; }
+    importedShape?.delete?.();
+    importedShape = shape;
+    const transfer = [detail.vertices.buffer, detail.normals.buffer, detail.triangles.buffer, detail.lines.buffer];
+    return { result: { ...detail, solidCount: shape.solids.length }, transfer };
+  },
+  async exportImportedStep() {
+    await init();
+    if (!importedShape) throw new Error("Import a STEP solid first");
+    const blob = r.exportSTEP([{ shape: importedShape, name: "Imported model" }], { unit: "mm" });
+    const buffer = await blob.arrayBuffer();
+    return { result: { buffer, bytes: buffer.byteLength }, transfer: [buffer] };
+  },
   async init() {
     const t0 = performance.now();
     await init();
