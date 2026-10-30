@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Sparkles, X, LoaderCircle, Check, Ban } from "lucide-react";
 import { approvePlan, askAssistant, discardPlan, setState, useStore } from "../state/store";
+import { ChangeImpact } from "./ChangeImpact";
 
 const SUGGESTIONS = [
   "Design a rugged equipment mount for a communications module: aluminum, 120 mm long, 50 mm wide, M5 mounting holes.",
@@ -33,6 +34,7 @@ export function Assistant() {
       <div className={`msg ${si?.configured ? "info" : "warn"} planner-badge`}>
         {si?.configured ? <>Planner: Model Serving <code>{si.endpoint}</code>. Requests stay inside the Databricks workspace.</> : <>Offline template planner — it adjusts template dimensions only.{si?.reason ? <><br /><small>{si.reason}</small></> : null}</>}
       </div>
+      <ChangeImpact />
       <div className="chat" ref={list}>
         {chat.length === 0 ? (
           <div className="empty-chat">
