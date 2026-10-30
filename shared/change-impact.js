@@ -2,10 +2,15 @@
 // Conservative static dependency analysis: it never claims engineering validation.
 const words = (s) => String(s).match(/[A-Za-z_][A-Za-z_0-9]*/g) ?? [];
 const readParams = (obj, names, out = new Set()) => {
-  if (typeof obj === "string") for (const w of words(obj)) if (names.has(w)) out.add(w);
-  else if (Array.isArray(obj)) for (const item of obj) readParams(item, names, out);
-  else if (obj && typeof obj === "object") for (const [key, val] of Object.entries(obj))
-    if (!["id", "name", "material", "color", "text", "font"].includes(key)) readParams(val, names, out);
+  if (typeof obj === "string") {
+    for (const w of words(obj)) if (names.has(w)) out.add(w);
+  } else if (Array.isArray(obj)) {
+    for (const item of obj) readParams(item, names, out);
+  } else if (obj && typeof obj === "object") {
+    for (const [key, val] of Object.entries(obj)) {
+      if (!["id", "name", "material", "color", "text", "font"].includes(key)) readParams(val, names, out);
+    }
+  }
   return out;
 };
 export function changeImpact(before, after) {
