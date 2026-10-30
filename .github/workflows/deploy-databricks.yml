@@ -1,0 +1,49 @@
+name: Deploy Super CAD to Databricks.com
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Bundle target
+        required: true
+        type: choice
+        options: [dev]
+permissions:
+  contents: read
+concurrency:
+  group: deploy-super-cad
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: databricks-dev
+    timeout-minutes: 25
+    env:
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Check deployment configuration
+        run: |
+          test -n "$DATABRICKS_HOST" || { echo "::error::Set DATABRICKS_HOST GitHub environment variable"; exit 1; }
+          test -n "$DATABRICKS_CLIENT_ID" || { echo "::error::Set DATABRICKS_CLIENT_ID secret"; exit 1; }
+          test -n "$DATABRICKS_CLIENT_SECRET" || { echo "::error::Set DATABRICKS_CLIENT_SECRET secret"; exit 1; }
+      - uses: databricks/setup-cli@main
+      - name: Bind bundle resource to existing app if needed
+        shell: bash
+        run: |
+          # Binding existing Databricks app avoids creating a second app.
+          # If the resource is already bound, deploy proceeds without rebinding.
+          databricks bundle deployment bind super_cad super-cad -t dev || echo "Bind may already exist; proceeding to deploy"
+      - name: Deploy and start Super CAD
+        run: |
+          databricks bundle validate -t dev
+          databricks bundle deploy -t dev
+          databricks bundle run super_cad -t dev
