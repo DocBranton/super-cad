@@ -58,13 +58,32 @@ export function StepImport({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [name, setName] = useState("");
+  const [holeX, setHoleX] = useState("");
+  const [holeY, setHoleY] = useState("");
+  const [holeDiameter, setHoleDiameter] = useState("8");
+  const [removedVolume, setRemovedVolume] = useState<number | null>(null);
   async function open(file?: File) {
     if (!file) return;
     setError("");
     if (!/\.(step|stp)$/i.test(file.name)) return setError("Select a .step or .stp CAD file.");
     if (file.size > 32 * 1024 * 1024 || file.size < 50) return setError("STEP file must be between 50 bytes and 32 MB.");
     setLoading(true);
-    try { const result = await geometry.importStep(await file.arrayBuffer(), file.name); setData(result); setName(file.name); }
+    try { const result = await geometry.importStep(await file.arrayBuffer(), file.name); setData(result); setName(file.name); setHoleX(String(result.bounds.centre[0])); setHoleY(String(result.bounds.centre[1])); setRemovedVolume(null); }
+    catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+    finally { setLoading(false); }
+  }
+  async function cutHole() {
+    if (!data) return;
+    setError(""); setLoading(true);
+    try {
+      const result = await geometry.cutImportedHole(Number(holeX), Number(holeY), Number(holeDiameter));
+      setData(result); setRemovedVolume(result.removedVolume);
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+    finally { setLoading(false); }
+  }
+  async function reset() {
+    setError(""); setLoading(true);
+    try { setData(await geometry.resetImported()); setRemovedVolume(null); }
     catch (e) { setError(e instanceof Error ? e.message : String(e)); }
     finally { setLoading(false); }
   }
@@ -89,10 +108,18 @@ export function StepImport({ onClose }: { onClose: () => void }) {
     <div style={{ display: "flex", alignItems: "center", gap: 15, padding: "12px 17px" }}>
       <label className="btn" style={{ cursor: "pointer" }}>Open STEP… <input aria-label="Choose STEP file" type="file" accept=".step,.stp" style={{ display: "none" }} onChange={e => { void open(e.currentTarget.files?.[0]); e.currentTarget.value = ""; }}/></label>
       <button className="btn" disabled={!data || loading} onClick={() => void exportStep()}>Export STEP round-trip</button>
+      <button className="btn" disabled={!data || loading} onClick={() => void reset()}>Reset imported solid</button>
       <span style={{ fontSize: 12, opacity: .7 }}>{loading ? "Processing B-Rep…" : name || "No file selected"}</span>
     </div>
     {error && <div role="alert" style={{ padding: 10, color: "#ffc3ad" }}>{error}</div>}
-    {data ? <><StepCanvas data={data}/><div style={{ display: "flex", flexWrap: "wrap", gap: 22, padding: "13px 17px", fontSize: 13, background: "#253344" }}>
+    {data ? <><div style={{display:"flex",gap:10,alignItems:"center",padding:"8px 17px",flexWrap:"wrap",background:"#1d2d3a"}}>
+      <strong style={{fontSize:12}}>CUT THROUGH-HOLE (XY)</strong>
+      <label>X (mm) <input aria-label="Hole X coordinate" type="number" step="any" value={holeX} onChange={e=>setHoleX(e.target.value)} style={{width:82}} /></label>
+      <label>Y (mm) <input aria-label="Hole Y coordinate" type="number" step="any" value={holeY} onChange={e=>setHoleY(e.target.value)} style={{width:82}} /></label>
+      <label>Diameter (mm) <input aria-label="Hole diameter" type="number" min=".5" max="5000" step="any" value={holeDiameter} onChange={e=>setHoleDiameter(e.target.value)} style={{width:82}} /></label>
+      <button className="btn" disabled={loading || !holeX.trim() || !holeY.trim() || !holeDiameter.trim()} onClick={() => void cutHole()}>Apply hole</button>
+      {removedVolume !== null && <span style={{fontSize:12}}>Removed {removedVolume.toFixed(2)} mm³ · B-Rep checked</span>}
+      </div><StepCanvas data={data}/><div style={{ display: "flex", flexWrap: "wrap", gap: 22, padding: "13px 17px", fontSize: 13, background: "#253344" }}>
       <span><b>{data.solidCount}</b> solids</span><span><b>{data.faces}</b> faces</span><span><b>{data.edgesCount}</b> edges</span>
       <span>Volume <b>{data.volume.toFixed(2)} mm³</b></span><span>Dimensions <b>{data.bounds.size.map(n => n.toFixed(2)).join(" × ")} mm</b></span>
     </div></> : <div style={{ flex: 1, display: "grid", placeItems: "center", color: "#c2cede", textAlign: "center", padding: 20 }}><div><h3>Import an existing neutral CAD solid</h3><p>Select a STEP file to inspect its exact B-Rep geometry and export a round-trip file.</p><p style={{ opacity: .7 }}>Feature reconstruction and editing imported faces are the next milestone; these controls do not modify the active parametric project.</p></div></div>}
