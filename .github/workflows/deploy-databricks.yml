@@ -1,5 +1,9 @@
 name: Deploy Super CAD to Databricks.com
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'deploy-requests/**'
   workflow_dispatch:
     inputs:
       target:
