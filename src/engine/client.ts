@@ -68,5 +68,7 @@ export const geometry = {
   init: () => call<{ ms: number; materials: string[]; fontErrors: Record<string, string> }>("init"),
   regenerate: (plan: unknown, rollback?: number) => call<RegenResult>("regenerate", { plan, rollback }),
   validate: () => call<ValidationReport>("validate"),
+  importStep: (buffer: ArrayBuffer, name: string) => call<BodyMesh & { solidCount: number }>("importStep", { buffer, name }),
+  exportImportedStep: () => call<{ buffer: ArrayBuffer; bytes: number }>("exportImportedStep"),
   export: (format: "step" | "stl", bodyIds?: string[]) => call<{ buffer: ArrayBuffer; bytes: number }>("export", { format, bodyIds }),
 };
