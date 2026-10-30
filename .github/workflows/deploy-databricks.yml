@@ -47,9 +47,7 @@ jobs:
         run: |
           # Binding existing Databricks app avoids creating a second app.
           # If the resource is already bound, deploy proceeds without rebinding.
-          if ! databricks bundle deployment bind super_cad super-cad -t dev; then
-            echo "::notice::Binding was not completed. It may already exist; bundle deploy will check."
-          fi
+          databricks bundle deployment bind super_cad super-cad -t dev --auto-approve
       - name: Deploy and start Super CAD
         run: |
           databricks bundle validate -t dev
